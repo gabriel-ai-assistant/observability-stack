@@ -1,99 +1,43 @@
 # Observability Stack
 
-Self-hosted, per-node monitoring stack: Prometheus, Grafana, Loki, and Promtail. Deploys alongside your applications. Grafana is served at `/telemetry` via nginx reverse proxy.
+A unified, Docker Compose-based observability stack providing metrics collection, log aggregation, and dashboarding out of the box.
 
-## Architecture
+## Components
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Node                                               │
-│                                                     │
-│  ┌──────────┐  scrape   ┌────────────┐              │
-│  │Prometheus│◄──────────│node-exporter│  host metrics│
-│  │  :9090   │◄──┐       └────────────┘              │
-│  └────┬─────┘   │       ┌────────────┐              │
-│       │         └───────│  cadvisor  │  containers  │
-│       │                 └────────────┘              │
-│       ▼                                             │
-│  ┌─────────┐    ┌──────┐    ┌────────┐              │
-│  │ Grafana │◄───│ Loki │◄───│Promtail│              │
-│  │  :3001  │    │:3100 │    │  logs  │              │
-│  └────┬────┘    └──────┘    └────────┘              │
-│       │                                             │
-└───────┼─────────────────────────────────────────────┘
-        │
-   nginx /telemetry  →  Grafana
-```
+| Service | Role | Default Port |
+|---------|------|-------------|
+| **Prometheus** | Metrics collection & storage | `9090` |
+| **Grafana** | Visualization & dashboards | `3000` |
+| **Loki** | Log aggregation & querying | `3100` |
+| **Promtail** | Log shipping (Docker logs → Loki) | — |
 
 ## Quick Start
 
 ```bash
-# 1. Configure
-cp .env.example .env
-# Edit .env with your admin password
-
-# 2. Launch
+cp .env.example .env   # adjust ports/passwords as needed
 docker compose up -d
-
-# 3. Access
-# Direct: http://localhost:3001
-# Via nginx: http://yourhost/telemetry (after nginx config)
 ```
 
-## Adding Application Targets
+- Grafana: [http://localhost:3000](http://localhost:3000) (default login: `admin` / value of `GF_SECURITY_ADMIN_PASSWORD`)
+- Prometheus: [http://localhost:9090](http://localhost:9090)
 
-Edit `prometheus/prometheus.yml` and add a scrape config:
+Datasources for Prometheus and Loki are auto-provisioned in Grafana.
 
-```yaml
-- job_name: "my-app"
-  metrics_path: /metrics
-  static_configs:
-    - targets: ["host.docker.internal:8000"]
-      labels:
-        app: "my-app"
-```
+## Configuration
 
-Then reload Prometheus:
+| File | Purpose |
+|------|---------|
+| `prometheus/prometheus.yml` | Scrape targets |
+| `promtail/config.yml` | Log discovery & pipeline |
+| `grafana/provisioning/datasources/` | Auto-provisioned datasources |
+| `.env` | Ports, passwords, tunables |
 
-```bash
-docker compose restart prometheus
-```
+## Adding Your App
 
-## Nginx Setup
+1. Expose a `/metrics` endpoint in your service.
+2. Add a scrape job in `prometheus/prometheus.yml` under the `app-metrics` placeholder.
+3. `docker compose restart prometheus`
 
-Include the provided snippet in your nginx server block:
+## License
 
-```nginx
-include /path/to/observability-stack/nginx/telemetry.conf;
-```
-
-Or copy the location block from `nginx/telemetry.conf` into your existing config. Reload nginx after.
-
-## Services
-
-| Service        | Port | Purpose              |
-|----------------|------|----------------------|
-| Prometheus     | 9090 | Metrics storage      |
-| Grafana        | 3001 | Dashboards & alerts  |
-| Loki           | 3100 | Log aggregation      |
-| Promtail       | —    | Log shipping         |
-| Node Exporter  | 9100 | Host metrics         |
-| cAdvisor       | 8080 | Container metrics    |
-
-## Prometheus Federation (Future)
-
-For multi-node setups, a central Prometheus can federate from each node:
-
-```yaml
-# On central Prometheus
-- job_name: "federation-node-1"
-  honor_labels: true
-  metrics_path: /federate
-  params:
-    match[]:
-      - '{__name__=~".+"}'
-  static_configs:
-    - targets: ["node1:9090"]
-```
-
-This enables a central Grafana to query metrics across all nodes while each node retains local observability.
+MIT
