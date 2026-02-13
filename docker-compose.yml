@@ -28,6 +28,7 @@ services:
     depends_on:
       - prometheus
       - loki
+      - tempo
 
   loki:
     image: grafana/loki:latest
@@ -50,7 +51,21 @@ services:
     depends_on:
       - loki
 
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./tempo/tempo-config.yml:/etc/tempo/config.yaml:ro
+      - tempo-data:/var/tempo
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    restart: unless-stopped
+
 volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  tempo-data:

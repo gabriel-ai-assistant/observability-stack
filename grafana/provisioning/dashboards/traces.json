@@ -1,0 +1,98 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Trace Search",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "nativeSearch",
+          "serviceName": "${service}",
+          "minDuration": "${min_duration}",
+          "limit": 20
+        }
+      ]
+    },
+    {
+      "title": "Service Map",
+      "type": "nodeGraph",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 10 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "serviceMap"
+        }
+      ]
+    },
+    {
+      "title": "Trace Duration Histogram",
+      "type": "histogram",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "nativeSearch",
+          "serviceName": "${service}",
+          "limit": 100
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "bucketSize": 50,
+        "combine": false
+      }
+    },
+    {
+      "title": "Error Traces",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{ status = error }",
+          "limit": 20
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["tempo", "tracing", "opentelemetry"],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "textbox",
+        "label": "Service Name",
+        "current": { "value": "" }
+      },
+      {
+        "name": "min_duration",
+        "type": "textbox",
+        "label": "Min Duration",
+        "current": { "value": "" }
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Distributed Tracing",
+  "uid": "tempo-traces"
+}
